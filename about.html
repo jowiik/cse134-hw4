@@ -21,6 +21,8 @@
     </nav>
   </header>
 
+  <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Toggle theme">🌙</button>
+
     <main class="site-main">
       <!-- Education -->
       <section class="about-section" aria-labelledby="edu">
@@ -56,5 +58,43 @@
   <footer class="site-footer">
     <p>&copy; 2025 Joseph Kim</p>
   </footer>
+
+  <script>
+    // Theme toggle functionality
+    const themeToggle = document.querySelector('.theme-toggle');
+    const body = document.body;
+
+    // Load saved theme
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+      body.dataset.theme = 'dark';
+      themeToggle.setAttribute('aria-pressed', 'true');
+      themeToggle.textContent = '☀️';
+    } else {
+      themeToggle.textContent = '🌙';
+    }
+
+    // Theme toggle click handler
+    themeToggle.addEventListener('click', () => {
+      try {
+        const isDark = body.dataset.theme === 'dark';
+        if (isDark) {
+          delete body.dataset.theme;
+          localStorage.setItem('theme', 'light');
+          themeToggle.setAttribute('aria-pressed', 'false');
+          themeToggle.textContent = '🌙';
+        } else {
+          body.dataset.theme = 'dark';
+          localStorage.setItem('theme', 'dark');
+          themeToggle.setAttribute('aria-pressed', 'true');
+          themeToggle.textContent = '☀️';
+        }
+      } catch (error) {
+        // Show error if theme switching fails
+        alert('Theme switching requires JavaScript to be enabled. Please enable JavaScript and try again.');
+        console.error('Theme switching failed:', error);
+      }
+    });
+  </script>
 </body>
 </html>

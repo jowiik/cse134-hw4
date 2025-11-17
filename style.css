@@ -13,17 +13,28 @@
   --h2: 2rem;
   --lead: 1.2rem;
   --hero-min: 35dvh;
+  --header-bg: #ffffff;
 }
 
 html { font-size: 105%; }
 
 body.site {
   margin: 0;
-  background-color: var(--bg, #f8fbf8); 
+  background-color: var(--bg, #f8fbf8);
   color: var(--fg, #111);
   font-family: "Lora", Georgia, "Times New Roman", serif;
   line-height: 1.65;
   font-optical-sizing: auto;
+}
+
+/* Dark theme */
+body[data-theme="dark"] {
+  --bg: #0b1220;
+  --fg: #f8fbf8;
+  --muted: #9ca3af;
+  --brand: #3b82f6;
+  --brand-ink: #2563eb;
+  --header-bg: #1f2937;
 }
 
 /* Layout wrappers */
@@ -35,7 +46,10 @@ body.site {
   padding-inline: var(--space, 1rem); /* var fallback */
 }
 
-.site-header { padding-block: 1.5rem 0.5rem; }
+.site-header {
+  padding-block: 1.5rem 0.5rem;
+  background-color: var(--header-bg, #ffffff);
+}
 
 .site-footer {
   padding-block: 0 1.5rem;
@@ -104,6 +118,36 @@ body.site {
 }
 
 .site-nav a[aria-current="page"] { font-weight: 600; }
+
+/* Theme toggle */
+.theme-toggle {
+  position: fixed;
+  bottom: 1rem;
+  right: 1rem;
+  z-index: 1000;
+  padding: 0.75rem;
+  background: var(--brand, #0b84ff);
+  color: white;
+  border: none;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  cursor: pointer;
+  transition: background-color 0.2s ease, transform 0.1s ease;
+  box-shadow: var(--shadow, rgba(0,0,0,.1));
+}
+
+.theme-toggle:hover {
+  background: var(--brand-ink, #0a66c2);
+  transform: scale(1.05);
+}
+
+.theme-toggle:active {
+  transform: scale(0.95);
+}
+
+.theme-toggle[aria-pressed="true"] {
+  background: var(--muted, #5a6472);
+}
 
 /* Main content grid */
 .site-main {
@@ -282,6 +326,13 @@ ul.tight li { margin: .35rem 0; }
   gap: 1rem;
   animation: fade-up 700ms ease-out both;
 }
+
+.form-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
 .contact-form {
   label { font-weight: 600; font-size: .95rem; }
   input, textarea {
@@ -293,7 +344,8 @@ ul.tight li { margin: .35rem 0; }
     transition: border-color .2s ease, transform .12s ease; /* transitions */
   }
   input:focus, textarea:focus {
-    outline: none;
+    outline: 2px solid var(--brand, #0b84ff);
+    outline-offset: 2px;
     border-color: var(--brand, #0b84ff);
     transform: translateY(-1px);    /* transform requirement */
   }
@@ -309,6 +361,100 @@ ul.tight li { margin: .35rem 0; }
     transition: transform .12s ease, background-color .2s ease;
   }
   button:hover { transform: translateY(-1px); background-color: #005eff; }
+}
+
+.form-field label[for]:has(+ input[required])::after,
+.form-field label[for]:has(+ textarea[required])::after {
+  content: " *";
+  color: #c33;
+  font-weight: 700;
+}
+
+.contact-form input:required,
+.contact-form textarea:required {
+  border-left: 3px solid #0b84ff;
+}
+
+.contact-form input:optional,
+.contact-form textarea:optional {
+  border-left: 3px solid #ccc;
+}
+
+.contact-form input:invalid:not(:placeholder-shown),
+.contact-form textarea:invalid:not(:placeholder-shown) {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}
+
+.contact-form input:invalid:focus:not(:placeholder-shown),
+.contact-form textarea:invalid:focus:not(:placeholder-shown) {
+  outline-color: #dc3545;
+  border-color: #dc3545;
+}
+
+.contact-form input:valid:not(:placeholder-shown),
+.contact-form textarea:valid:not(:placeholder-shown) {
+  border-color: #28a745;
+  background-color: #f8fff8;
+}
+
+.contact-form input:user-invalid,
+.contact-form textarea:user-invalid {
+  border-color: #dc3545;
+  background-color: #fff5f5;
+}
+
+.flash-error {
+  animation: flash-error 0.2s ease-in-out;
+}
+
+@keyframes flash-error {
+  from {
+    background-color: #ffe6e6;
+    border-color: #ff6b6b;
+  }
+  to {
+    background-color: inherit;
+    border-color: inherit;
+  }
+}
+
+.near-limit {
+  border-color: #d97706 !important;
+  background-color: #fff7ed;
+}
+
+.contact-form input:user-valid,
+.contact-form textarea:user-valid {
+  border-color: #28a745;
+  background-color: #f8fff8;
+}
+
+.message {
+  display: block;
+  padding: 0.75rem;
+  border-radius: 0.4rem;
+  font-size: 0.95rem;
+  min-height: 2.5rem;
+}
+
+.message:empty {
+  opacity: 0;
+  padding: 0;
+  min-height: 0;
+  border: none;
+}
+
+.message.error {
+  background-color: #fee;
+  border: 1px solid #fcc;
+  color: #c33;
+}
+
+.message.info {
+  background-color: #e8f4fd;
+  border: 1px solid #b3d9f2;
+  color: #0b1220;
 }
 
 /* Media query: stack vertically on narrow viewports */

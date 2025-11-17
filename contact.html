@@ -19,11 +19,12 @@
       </nav>
     </header>
 
+    <button type="button" class="theme-toggle" aria-pressed="false" aria-label="Toggle theme">🌙</button>
+
     <main class="site-main">
       <section class="about-section" aria-labelledby="contact">
         <hr class="rule">
 
-        <!-- Flex container -->
         <div class="contact-wrap">
           <aside class="contact-aside" aria-labelledby="reach-me">
             <ul class="tight contact-links">
@@ -45,18 +46,31 @@
           <section class="contact-main" aria-labelledby="send-msg">
             <h3 id="send-msg" class="subhead">Send a message</h3>
 
-            <form class="contact-form" action="https://formspree.io/f/mdkprpdb" method="POST">
-              <label for="name">Name</label>
-              <input id="name" name="name" type="text" required>
+            <form class="contact-form" action="https://httpbin.org/post" method="POST">
+              <div class="form-field">
+                <label for="name">Name</label>
+                <input id="name" name="name" type="text" required minlength="2" maxlength="100" pattern="[A-Za-z\s\-'.]+" title="Please enter a valid name (letters, spaces, hyphens, apostrophes, and periods only)">
+              </div>
 
-              <label for="email">Email</label>
-              <input id="email" name="_replyto" type="email" required>
+              <div class="form-field">
+                <label for="email">Email</label>
+                <input id="email" name="_replyto" type="email" required>
+              </div>
 
-              <label for="subject">Subject</label>
-              <input id="subject" name="subject" type="text" required>
+              <div class="form-field">
+                <label for="subject">Subject</label>
+                <input id="subject" name="subject" type="text" required minlength="2" maxlength="200" pattern="[A-Za-z0-9\s\-'.,!?]+" title="Please enter a valid subject">
+              </div>
 
-              <label for="message">Message</label>
-              <textarea id="message" name="message" rows="6" required></textarea>
+              <div class="form-field">
+                <label for="message">Message</label>
+                <textarea id="message" name="message" rows="6" required minlength="10" maxlength="1000"></textarea>
+              </div>
+
+              <input type="hidden" name="possible_bot" id="possible_bot" value="">
+
+              <output id="error-output" class="message error" aria-live="polite"></output>
+              <output id="info-output" class="message info" aria-live="polite"></output>
 
               <button type="submit">Send</button>
             </form>
@@ -68,6 +82,202 @@
     <footer class="site-footer">
       <p>&copy; 2025 Joseph Kim</p>
     </footer>
+
+    <script>
+      window.form_errors = [];
+      
+      const form = document.querySelector('.contact-form');
+      const nameField = document.getElementById('name');
+      const emailField = document.getElementById('email');
+      const subjectField = document.getElementById('subject');
+      const messageField = document.getElementById('message');
+      const errorOutput = document.getElementById('error-output');
+      const infoOutput = document.getElementById('info-output');
+      
+      const lastValidValues = new Map();
+
+      const fields = [nameField, emailField, subjectField, messageField];
+      
+      function getFieldLabel(field) {
+        const label = document.querySelector(`label[for="${field.id}"]`);
+        return label ? label.textContent : field.name;
+      }
+      
+      function validateField(field) {
+        let message = '';
+        
+        if (field.validity.valueMissing) {
+          message = `${getFieldLabel(field)} is required.`;
+        } else if (field.validity.tooShort) {
+          message = `${getFieldLabel(field)} must be at least ${field.minLength} characters.`;
+        } else if (field.validity.tooLong) {
+          message = `${getFieldLabel(field)} must not exceed ${field.maxLength} characters.`;
+        } else if (field.validity.typeMismatch) {
+          message = `Please enter a valid ${field.type}.`;
+        } else if (field.validity.patternMismatch) {
+          message = `${getFieldLabel(field)} contains invalid characters.`;
+        }
+        
+        field.setCustomValidity(message);
+        return message;
+      }
+      
+      function showError(message) {
+        errorOutput.textContent = message;
+        setTimeout(() => {
+          errorOutput.textContent = '';
+        }, 3000);
+      }
+      
+      function flashField(field) {
+        field.classList.add('flash-error');
+        setTimeout(() => {
+          field.classList.remove('flash-error');
+        }, 200);
+      }
+      
+      function checkPattern(field) {
+        if (!field.pattern) return;
+        
+        const regex = new RegExp(`^${field.pattern}$`);
+        const currentValue = field.value;
+        
+        if (currentValue && !regex.test(currentValue)) {
+          const lastValid = lastValidValues.get(field) || '';
+          field.value = lastValid;
+          flashField(field);
+          showError(`You typed an illegal character in the ${getFieldLabel(field)} field.`);
+        } else {
+          lastValidValues.set(field, currentValue);
+        }
+      }
+      
+      function updateCharCount() {
+        const maxLength = parseInt(messageField.maxLength);
+        const currentLength = messageField.value.length;
+        const remaining = maxLength - currentLength;
+
+        if (remaining <= 100) {
+          infoOutput.textContent = `Remaining: ${remaining} characters`;
+        } else {
+          // Clear character count if more than 100 characters remaining
+          // Only clear if it contains character count info
+          if (infoOutput.textContent.startsWith('Remaining:')) {
+            infoOutput.textContent = '';
+          }
+        }
+
+        if (remaining < 20) {
+          messageField.classList.add('near-limit');
+        } else {
+          messageField.classList.remove('near-limit');
+        }
+      }
+      
+      // Add invalid event listeners to track errors automatically
+      fields.forEach(field => {
+        field.addEventListener('invalid', () => {
+          const message = validateField(field);
+          if (message) {
+            window.form_errors.push({
+              field: field.name || field.id,
+              error: message,
+              timestamp: new Date().toISOString()
+            });
+          }
+        });
+      });
+
+      nameField.addEventListener('input', () => checkPattern(nameField));
+      subjectField.addEventListener('input', () => checkPattern(subjectField));
+      messageField.addEventListener('input', updateCharCount);
+
+      lastValidValues.set(nameField, '');
+      lastValidValues.set(subjectField, '');
+
+      updateCharCount();
+
+      form.addEventListener('submit', (e) => {
+        const isValid = form.checkValidity();
+
+        if (!isValid) {
+          e.preventDefault();
+
+          const errors = [];
+
+          fields.forEach(field => {
+            const message = validateField(field);
+            if (message) {
+              errors.push(message);
+            }
+          });
+
+          if (messageField.value.length > parseInt(messageField.maxLength)) {
+            const msg = `${getFieldLabel(messageField)} exceeds maximum length.`;
+            errors.push(msg);
+            window.form_errors.push({
+              field: messageField.name || messageField.id,
+              error: msg,
+              timestamp: new Date().toISOString()
+            });
+          }
+
+          errorOutput.textContent = errors.join(' ');
+          infoOutput.textContent = '';
+        } else {
+          fields.forEach(field => field.setCustomValidity(''));
+
+          infoOutput.textContent = 'Form looks good, submitting…';
+          errorOutput.textContent = '';
+
+          // Always add hidden input with form errors
+          let hiddenInput = form.querySelector('input[name="form-errors"]');
+          if (!hiddenInput) {
+            hiddenInput = document.createElement('input');
+            hiddenInput.type = 'hidden';
+            hiddenInput.name = 'form-errors';
+            form.appendChild(hiddenInput);
+          }
+          hiddenInput.value = JSON.stringify(window.form_errors);
+        }
+      });
+
+      // Theme toggle functionality
+      const themeToggle = document.querySelector('.theme-toggle');
+      const body = document.body;
+
+      // Load saved theme
+      const savedTheme = localStorage.getItem('theme');
+      if (savedTheme === 'dark') {
+        body.dataset.theme = 'dark';
+        themeToggle.setAttribute('aria-pressed', 'true');
+        themeToggle.textContent = '☀️';
+      } else {
+        themeToggle.textContent = '🌙';
+      }
+
+      // Theme toggle click handler
+      themeToggle.addEventListener('click', () => {
+        try {
+          const isDark = body.dataset.theme === 'dark';
+          if (isDark) {
+            delete body.dataset.theme;
+            localStorage.setItem('theme', 'light');
+            themeToggle.setAttribute('aria-pressed', 'false');
+            themeToggle.textContent = '🌙';
+          } else {
+            body.dataset.theme = 'dark';
+            localStorage.setItem('theme', 'dark');
+            themeToggle.setAttribute('aria-pressed', 'true');
+            themeToggle.textContent = '☀️';
+          }
+        } catch (error) {
+          // Show error if theme switching fails
+          alert('Theme switching requires JavaScript to be enabled. Please enable JavaScript and try again.');
+          console.error('Theme switching failed:', error);
+        }
+      });
+    </script>
 
     </body>
 </html>
